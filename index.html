@@ -305,15 +305,37 @@ footer { padding: 36px 0 48px; border-top: 1px solid var(--line); color: var(--i
     });
   }
   function last(a) { for (var i = (a || []).length - 1; i >= 0; i--) if (a[i]) return a[i]; return null; }
-  function heading(hist) {
+  // Heading from the most recent displacement of at least MIN_MOVE metres, so position
+  // jitter of a stopped aircraft does not spin its icon; if the whole 10 s history is
+  // stationary, carry the heading over from the previous frame.
+  var MIN_MOVE = 4, HEAD = null;
+  function headingFromHist(hist) {
     var h = (hist || []).filter(Boolean); if (h.length < 2) return null;
-    var a = px(h[h.length - 2]), b = px(h[h.length - 1]);
-    return Math.atan2(b[0] - a[0], -(b[1] - a[1])) * 180 / Math.PI;
+    var mpp = (DATA.view.north - DATA.view.south) * 111320 / S, b = px(h[h.length - 1]);
+    for (var k = h.length - 2; k >= 0; k--) {
+      var a = px(h[k]), dx = b[0] - a[0], dy = b[1] - a[1];
+      if (Math.hypot(dx, dy) * mpp >= MIN_MOVE) return Math.atan2(dx, -dy) * 180 / Math.PI;
+    }
+    return null;
   }
-  function icon(svg, hist, type, color) {
+  function buildHeadings() {
+    HEAD = [[], []];
+    [0, 1].forEach(function (i) {
+      var prev = null;
+      DATA.frames.forEach(function (f, j) {
+        var hd = headingFromHist(DATA.cells[f + '_4T'].hist[i]);
+        prev = hd === null ? prev : hd;
+        HEAD[i][j] = prev;
+      });
+      // frames before the first movement take the first known heading
+      var first = HEAD[i].filter(function (v) { return v !== null; })[0];
+      HEAD[i] = HEAD[i].map(function (v) { return v === null ? (first === undefined ? null : first) : v; });
+    });
+  }
+  function icon(svg, hist, type, color, agent) {
     var p = last(hist); if (!p) return;
     var q = px(p), mpp = (DATA.view.north - DATA.view.south) * 111320 / S;
-    var s = Math.max(12, (LEN[type] || 10) / mpp), hd = heading(hist);
+    var s = Math.max(12, (LEN[type] || 10) / mpp), hd = HEAD[agent][+t.value];
     var g = el('g', { transform: 'translate(' + q[0].toFixed(1) + ',' + q[1].toFixed(1) + ')' + (type === 'Aircraft' && hd !== null ? ' rotate(' + (hd - 270).toFixed(1) + ')' : '') }, svg);
     el('rect', { x: -s / 2 - 2, y: -s / 2 - 2, width: s + 4, height: s + 4, fill: '#fff', mask: 'url(#mk-' + type + '-halo)' }, g);
     el('rect', { x: -s / 2, y: -s / 2, width: s, height: s, fill: color, mask: 'url(#mk-' + type + ')' }, g);
@@ -351,8 +373,8 @@ footer { padding: 36px 0 48px; border-top: 1px solid var(--line); color: var(--i
       }
       line(svg, c.hist[i], col, 2.2, 0.75, '1 4');
     });
-    icon(svg, c.hist[0], c.type[0], C1);
-    icon(svg, c.hist[1], c.type[1], C2);
+    icon(svg, c.hist[0], c.type[0], C1, 0);
+    icon(svg, c.hist[1], c.type[1], C2, 1);
     var old = frameEl.querySelector('svg'); if (old) frameEl.removeChild(old);
     frameEl.insertBefore(svg, badge);
 
@@ -429,7 +451,7 @@ footer { padding: 36px 0 48px; border-top: 1px solid var(--line); color: var(--i
       b.setAttribute('aria-pressed', String(on || (b.dataset.m === model && !document.querySelector('.case .tab[data-m="' + p[1] + '"]'))));
     });
   });
-  fetch('assets/case_b7s62.json').then(function (r) { return r.json(); }).then(function (d) { DATA = d; show(); })
+  fetch('assets/case_b7s62.json').then(function (r) { return r.json(); }).then(function (d) { DATA = d; buildHeadings(); show(); })
     .catch(function () { frameEl.insertAdjacentHTML('afterbegin', '<p style="padding:20px">Could not load case data. </p>'); });
 
   // [RMSE h20, h50], [ADE h20, h50], [minADE h20, h50]
