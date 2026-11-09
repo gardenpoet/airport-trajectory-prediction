@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intention-Aware Airport Trajectory Prediction</title>
+<meta name="description" content="Intention-aware, multi-modal trajectory prediction for airport surface risk assessment. Jiaxing Li, Queen Mary University of London.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f5f7fa;
+  --ink: #16202c;
+  --ink-2: #4a5666;
+  --ink-3: #7a8594;
+  --line: #e2e7ee;
+  --accent: #0b4f9c;
+  --accent-soft: #e7f0fb;
+  --warn: #c0392b;
+  --radius: 10px;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.6 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: var(--accent); }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+section { padding: 48px 0; border-top: 1px solid var(--line); }
+h1, h2 { font-family: "Source Serif 4", Georgia, serif; letter-spacing: -0.01em; }
+h1 { font-size: clamp(1.7rem, 4vw, 2.5rem); line-height: 1.2; margin: 0 0 18px; }
+h2 { font-size: 1.55rem; margin: 0 0 6px; }
+.lead { color: var(--ink-2); margin: 0 0 24px; max-width: 760px; }
+.kicker { font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+
+/* header */
+header { padding: 56px 0 40px; background: linear-gradient(180deg, var(--bg-soft), var(--bg)); }
+.authors { font-size: 1.02rem; margin: 0 0 4px; }
+.authors b { font-weight: 600; }
+.affil { font-size: .88rem; color: var(--ink-3); margin: 0 0 18px; }
+.badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.badge { font-size: .82rem; padding: 4px 11px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.badge.grey { background: #eef1f5; color: var(--ink-2); }
+.tldr { margin: 28px 0 0; font-size: 1.04rem; max-width: 820px; }
+
+/* stats */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 14px; margin-top: 30px; }
+.stat { border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; background: var(--bg); }
+.stat .v { font-size: 1.75rem; font-weight: 700; color: var(--accent); line-height: 1.15; }
+.stat .v small { font-size: .95rem; font-weight: 500; color: var(--ink-3); }
+.stat .l { font-size: .9rem; color: var(--ink-2); margin-top: 6px; }
+
+/* case study */
+.case { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.panel { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tab { font: inherit; font-size: .86rem; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink-2); cursor: pointer; }
+.tab:hover { border-color: var(--accent); }
+.tab[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.frame { position: relative; aspect-ratio: 1 / 1; background: #eceae6; }
+.frame img { width: 100%; height: 100%; object-fit: cover; }
+.controls { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--line); }
+.play { font: inherit; font-size: .85rem; width: 76px; padding: 6px 0; border-radius: 8px; border: 1px solid var(--accent); background: var(--bg); color: var(--accent); cursor: pointer; }
+input[type=range] { flex: 1; accent-color: var(--accent); }
+.tlabel { font-variant-numeric: tabular-nums; font-size: .9rem; color: var(--ink-2); min-width: 52px; text-align: right; }
+.note { font-size: .86rem; color: var(--ink-2); margin: 12px 0 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .84rem; color: var(--ink-2); margin-top: 10px; }
+.legend span::before { content: ""; display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; background: currentColor; }
+.legend .a1 { color: #1f4fd1; } .legend .a2 { color: #d62728; }
+.side h3 { font-size: 1.02rem; margin: 0 0 8px; }
+.side .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+.side .seg button { font: inherit; font-size: .82rem; padding: 5px 11px; border: 0; background: var(--bg); color: var(--ink-2); cursor: pointer; }
+.side .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.callout { margin-top: 18px; padding: 14px 16px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 var(--radius) var(--radius) 0; font-size: .93rem; }
+
+/* method */
+.method-fig { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; background: #fff; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 14px; margin-top: 22px; }
+.step { padding: 16px 18px; border-radius: var(--radius); background: var(--bg-soft); }
+.step .n { font-size: .78rem; font-weight: 600; color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+.step h3 { font-size: 1.02rem; margin: 4px 0 6px; }
+.step p { margin: 0; font-size: .92rem; color: var(--ink-2); }
+
+/* results table */
+.tblwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .92rem; font-variant-numeric: tabular-nums; }
+th, td { padding: 9px 14px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { background: var(--bg-soft); font-weight: 600; font-size: .84rem; color: var(--ink-2); }
+thead th small { display: block; font-weight: 400; color: var(--ink-3); }
+tbody tr:last-child td { border-bottom: 0; }
+tr.ours td:first-child { font-weight: 600; color: var(--accent); }
+td.best { font-weight: 700; color: var(--accent); }
+.tblnote { font-size: .84rem; color: var(--ink-3); margin-top: 10px; }
+
+/* data */
+.airports { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.airports figure { margin: 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #fff; }
+.airports figcaption { padding: 8px 12px; font-size: .86rem; color: var(--ink-2); border-top: 1px solid var(--line); }
+.airports figcaption b { color: var(--ink); }
+
+footer { padding: 36px 0 48px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: .88rem; }
+
+@media (max-width: 800px) {
+  .case { grid-template-columns: 1fr; }
+  .airports { grid-template-columns: 1fr; }
+  section { padding: 36px 0; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Research project</div>
+    <h1>An Intention-Aware Multi-Modal Trajectory Prediction Framework for Airport Surface Risk Assessment</h1>
+    <p class="authors"><b>Jiaxing Li</b><sup>1</sup>, Zirui Li<sup>2</sup>, John Korna<sup>3</sup>, Jun Chen<sup>1</sup>, Xinwei Wang<sup>1,*</sup></p>
+    <p class="affil"><sup>1</sup>Queen Mary University of London &nbsp;·&nbsp; <sup>2</sup>Nanyang Technological University &nbsp;·&nbsp; <sup>3</sup>NATS &nbsp;·&nbsp; <sup>*</sup>Corresponding author</p>
+    <div class="badges">
+      <span class="badge">To be submitted to Transportation Research Part C</span>
+      <span class="badge grey">3 US airports · 20 s and 50 s horizons</span>
+    </div>
+    <p class="tldr">Where will each aircraft on the airport surface go next, and how much should a controller trust that prediction? This work first predicts each aircraft's <b>manoeuvre intention</b> (turn left, turn right, straight, hold), ruling out manoeuvres that the taxiway network cannot support, then generates <b>probabilistic trajectories</b> for each intention and turns the full predicted distribution into a <b>conflict-risk score</b>.</p>
+
+    <div class="stats">
+      <div class="stat"><div class="v">0.79–0.94</div><div class="l">weighted F1 for manoeuvre intention, vs 0.50–0.61 when inferring the manoeuvre from generated trajectories</div></div>
+      <div class="stat"><div class="v">Lowest RMSE</div><div class="l">for the deployed (max-probability) prediction at all three airports and both horizons, against Amelia-TF, DESCENT and STGCNN</div></div>
+      <div class="stat"><div class="v">2.72 <small>m</small></div><div class="l">minimum ADE at Boston Logan (20 s horizon), 20% below the best baseline</div></div>
+      <div class="stat"><div class="v">5 <small>s earlier</small></div><div class="l">danger warning in a real near-miss case than the strongest baseline</div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+<section id="case">
+  <div class="wrap">
+    <div class="kicker">Case study · Boston Logan (KBOS)</div>
+    <h2>A near-miss, re-predicted every second</h2>
+    <p class="lead">Two aircraft taxi in trail towards the same intersection. Pick a model and play the 20 s window to see how its predictions evolve. Each candidate trajectory is drawn with opacity proportional to its predicted probability, with a one-standard-deviation band.</p>
+
+    <div class="case">
+      <div>
+        <div class="tabs" role="group" aria-label="Model">
+          <button class="tab" data-m="4T" aria-pressed="true">TP-4T (ours)</button>
+          <button class="tab" data-m="2T" aria-pressed="false">TP-2T (ours)</button>
+          <button class="tab" data-m="1T" aria-pressed="false">TP-1T (ours)</button>
+          <button class="tab" data-m="amelia" aria-pressed="false">Amelia-TF</button>
+          <button class="tab" data-m="stgcnn" aria-pressed="false">STGCNN</button>
+          <button class="tab" data-m="gt" aria-pressed="false">Ground truth</button>
+        </div>
+        <div class="panel">
+          <div class="frame"><img id="frame" src="assets/case_4T_p0.webp" alt="Predicted trajectories for the near-miss case" width="580" height="580"></div>
+          <div class="controls">
+            <button class="play" id="play">▶ Play</button>
+            <input type="range" id="t" min="0" max="3" step="1" value="0" aria-label="Time">
+            <span class="tlabel" id="tl">t = +0 s</span>
+          </div>
+        </div>
+        <p class="note">A1 and A2 are both predicted. Markers along each predicted line identify the intention. Dotted lines show the observed 10 s history.</p>
+      </div>
+
+      <div class="side">
+        <h3>Predicted collision risk over the same window</h3>
+        <div class="seg" role="group" aria-label="Aggregation">
+          <button data-r="maxprob" aria-pressed="true">Max-probability</button>
+          <button data-r="probweighted" aria-pressed="false">Probability-weighted</button>
+        </div>
+        <div class="panel"><img id="risk" src="assets/risk_maxprob.webp" alt="Predicted risk over time for five models" width="1300" height="840"></div>
+        <div class="callout">Risk is estimated by Monte Carlo sampling from each model's predicted Gaussians and counting the fraction of samples in which the two aircraft come into conflict. Max-probability uses only the most likely manoeuvre; probability-weighted aggregates over all manoeuvres, hedging against unlikely but dangerous ones. <b>TP-4T flags the danger earlier than every baseline.</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="method">
+  <div class="wrap">
+    <div class="kicker">Method</div>
+    <h2>Two phases: intention first, then trajectory</h2>
+    <p class="lead">Existing airport surface predictors map history directly to a set of candidate trajectories, with no explicit notion of manoeuvre and nothing that rules out turns where no taxiway exists. TP makes intention an explicit, map-constrained intermediate output.</p>
+    <div class="method-fig"><img src="assets/framework.webp" alt="Framework overview: labelling and feasibility, Transformer encoder, intention decoder, trajectory decoder with scorer, and risk assessment" width="2000" height="1324" loading="lazy"></div>
+    <div class="steps">
+      <div class="step"><div class="n">Step 1</div><h3>Data-driven manoeuvre labels</h3><p>Speed and cumulative-turn thresholds learned from the data assign each sequence a TurnLeft, TurnRight, Straight or Hold label.</p></div>
+      <div class="step"><div class="n">Step 2</div><h3>Topology-constrained intention</h3><p>A Transformer encoder (temporal, interaction and map attention) feeds an intention classifier; a breadth-first search over the taxiway graph masks manoeuvres unreachable within the horizon.</p></div>
+      <div class="step"><div class="n">Step 3</div><h3>Intention-conditioned trajectories</h3><p>A Gaussian mixture decoder generates N candidates per manoeuvre, each with mean and uncertainty, and a learned scorer ranks them.</p></div>
+      <div class="step"><div class="n">Step 4</div><h3>Distribution-aware risk</h3><p>Monte Carlo conflict probability is aggregated over intentions, by max-probability or probability-weighted, to give a real-time risk score.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="results">
+  <div class="wrap">
+    <div class="kicker">Results</div>
+    <h2>Trajectory accuracy across three airports</h2>
+    <p class="lead">All manoeuvres pooled; each cell shows the 20 s / 50 s horizon in metres (lower is better). RMSE and ADE score the <b>deployed</b> max-probability prediction; minADE scores the best candidate in the pool (oracle).</p>
+    <div class="tabs" role="group" aria-label="Airport" id="apt">
+      <button class="tab" data-a="KBOS" aria-pressed="true">Boston Logan (KBOS)</button>
+      <button class="tab" data-a="KLAX" aria-pressed="false">Los Angeles (KLAX)</button>
+      <button class="tab" data-a="KMSY" aria-pressed="false">New Orleans (KMSY)</button>
+    </div>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Method</th><th>RMSE<small>deployed</small></th><th>ADE<small>deployed</small></th><th>minADE<small>oracle</small></th></tr></thead>
+        <tbody id="tb"></tbody>
+      </table>
+    </div>
+    <p class="tblnote">Selected rows. TP-4T selects among its candidates with the learned scorer. The full comparison (per-manoeuvre results, final displacement error, NLL, additional Amelia-TF variants) is in the manuscript.</p>
+  </div>
+</section>
+
+<section id="data">
+  <div class="wrap">
+    <div class="kicker">Data</div>
+    <h2>Large-scale airport surface surveillance data</h2>
+    <p class="lead">Models are trained and evaluated on historical surface surveillance tracks from the Amelia dataset at three US airports with very different layouts, using each airport's taxiway (grey) and runway (red) graph.</p>
+    <div class="airports">
+      <figure><img src="assets/topo_kbos.webp" alt="KBOS topology" width="900" height="900" loading="lazy"><figcaption><b>KBOS</b> · five runways, combined topology</figcaption></figure>
+      <figure><img src="assets/topo_klax.webp" alt="KLAX topology" width="900" height="900" loading="lazy"><figcaption><b>KLAX</b> · two parallel runway pairs</figcaption></figure>
+      <figure><img src="assets/topo_kmsy.webp" alt="KMSY topology" width="900" height="900" loading="lazy"><figcaption><b>KMSY</b> · two intersecting runways</figcaption></figure>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    Jiaxing Li · PhD candidate, School of Engineering and Materials Science, Queen Mary University of London<br>
+    Results are from a manuscript in preparation and may be revised. Basemaps © OpenStreetMap contributors.
+  </div>
+</footer>
+
+<script>
+(function () {
+  var frame = document.getElementById('frame'), t = document.getElementById('t'),
+      tl = document.getElementById('tl'), play = document.getElementById('play');
+  var model = '4T', timer = null;
+  var models = ['4T', '2T', '1T', 'amelia', 'stgcnn', 'gt'];
+  models.forEach(function (m) { for (var p = 0; p < 4; p++) { new Image().src = 'assets/case_' + m + '_p' + p + '.webp'; } });
+  function show() {
+    frame.src = 'assets/case_' + model + '_p' + t.value + '.webp';
+    tl.textContent = 't = +' + (t.value * 6) + ' s';
+  }
+  document.querySelectorAll('.case .tab').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.case .tab').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true'); model = b.dataset.m; show();
+    });
+  });
+  t.addEventListener('input', show);
+  function stop() { clearInterval(timer); timer = null; play.textContent = '▶ Play'; }
+  play.addEventListener('click', function () {
+    if (timer) { stop(); return; }
+    if (+t.value === 3) { t.value = 0; show(); }
+    play.textContent = '❚❚ Pause';
+    timer = setInterval(function () {
+      if (+t.value >= 3) { stop(); return; }
+      t.value = +t.value + 1; show();
+    }, 1100);
+  });
+
+  var risk = document.getElementById('risk');
+  document.querySelectorAll('.side .seg button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.side .seg button').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true'); risk.src = 'assets/risk_' + b.dataset.r + '.webp';
+    });
+  });
+
+  // [RMSE h20, h50], [ADE h20, h50], [minADE h20, h50]
+  var D = {
+    KBOS: [['STGCNN', [15.37, 43.86], [12.70, 35.20], [12.70, 35.20]],
+           ['Amelia-TF', [9.41, 28.84], [7.61, 22.59], [4.22, 10.90]],
+           ['DESCENT', [9.46, 30.18], [7.75, 23.73], [4.41, 11.16]],
+           ['TP-1T (ours)', [8.11, 26.46], [6.56, 20.82], [4.90, 14.56]],
+           ['TP-4T (ours)', [8.35, 27.25], [6.76, 21.40], [2.72, 7.91]]],
+    KLAX: [['STGCNN', [17.52, 48.00], [14.55, 38.77], [14.55, 38.77]],
+           ['Amelia-TF', [10.84, 34.52], [8.86, 27.29], [4.79, 14.82]],
+           ['DESCENT', [11.43, 34.78], [9.44, 27.60], [5.39, 13.03]],
+           ['TP-1T (ours)', [9.66, 31.06], [7.89, 24.60], [5.96, 17.21]],
+           ['TP-4T (ours)', [9.99, 32.23], [8.16, 25.56], [3.47, 8.98]]],
+    KMSY: [['STGCNN', [8.02, 21.86], [6.66, 17.66], [6.66, 17.66]],
+           ['Amelia-TF', [4.27, 11.62], [3.45, 9.13], [2.00, 4.89]],
+           ['DESCENT', [4.36, 11.85], [3.57, 9.36], [2.26, 4.80]],
+           ['TP-1T (ours)', [3.91, 10.48], [3.15, 8.24], [2.39, 5.95]],
+           ['TP-4T (ours)', [4.00, 10.96], [3.24, 8.68], [1.36, 3.60]]]
+  };
+  var tb = document.getElementById('tb');
+  function render(a) {
+    var rows = D[a], best = [1, 2, 3].map(function (c) {
+      return [0, 1].map(function (h) { return Math.min.apply(null, rows.map(function (r) { return r[c][h]; })); });
+    });
+    tb.innerHTML = rows.map(function (r) {
+      var cells = [1, 2, 3].map(function (c) {
+        var s = r[c].map(function (v, h) {
+          var txt = v.toFixed(2);
+          return v === best[c - 1][h] ? '<b style="color:var(--accent)">' + txt + '</b>' : txt;
+        });
+        return '<td>' + s.join(' / ') + '</td>';
+      }).join('');
+      return '<tr' + (r[0].indexOf('ours') > -1 ? ' class="ours"' : '') + '><td>' + r[0] + '</td>' + cells + '</tr>';
+    }).join('');
+  }
+  document.querySelectorAll('#apt .tab').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#apt .tab').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true'); render(b.dataset.a);
+    });
+  });
+  render('KBOS');
+})();
+</script>
+</body>
+</html>
