@@ -64,16 +64,6 @@ header { padding: 56px 0 40px; background: linear-gradient(180deg, var(--bg-soft
 .frame { position: relative; aspect-ratio: 1 / 1; background: #eceae6; }
 .frame svg { width: 100%; height: 100%; display: block; }
 .tbadge { position: absolute; left: 10px; bottom: 10px; font: 600 .95rem/1 ui-monospace, Consolas, monospace; color: #fff; background: rgba(20,24,30,.72); padding: 6px 9px; border-radius: 6px; }
-.intent { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 18px; padding: 12px 14px; border-top: 1px solid var(--line); font-size: .82rem; }
-.intent h4 { margin: 0 0 6px; font-size: .8rem; font-weight: 600; }
-.intent .row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 30px; align-items: center; gap: 6px; color: var(--ink-2); margin: 3px 0; }
-.intent .row > span:first-child { white-space: nowrap; }
-.intent .row .mask { font-size: .74rem; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 480px) { .intent { grid-template-columns: 1fr; } }
-.intent .bar { height: 7px; background: #edf0f4; border-radius: 4px; overflow: hidden; }
-.intent .bar i { display: block; height: 100%; border-radius: 4px; }
-.intent .row b { text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
-.intent .na { color: var(--ink-3); grid-column: 1 / -1; }
 .chart svg { width: 100%; height: auto; display: block; }
 .chartleg { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .8rem; color: var(--ink-2); padding: 0 14px 12px; }
 .chartleg span { cursor: pointer; }
@@ -175,9 +165,8 @@ footer { padding: 36px 0 48px; border-top: 1px solid var(--line); color: var(--i
             <input type="range" id="t" min="0" max="20" step="1" value="0" aria-label="Time">
             <span class="tlabel" id="tl">t = +0 s</span>
           </div>
-          <div class="intent" id="intent"></div>
         </div>
-        <p class="note"><b style="color:#1f4fd1">A1</b> and <b style="color:#d62728">A2</b> are both predicted, re-run every second on the latest 10 s of history (dotted). Each candidate is drawn with a one-standard-deviation band and opacity proportional to its predicted probability; dash pattern marks the intention for TP models.</p>
+        <p class="note"><b style="color:#1f4fd1">A1</b> and <b style="color:#d62728">A2</b> are both predicted, re-run every second on the latest 10 s of history (dotted). Each candidate is drawn with a one-standard-deviation band and opacity proportional to its predicted probability. TP models generate one candidate per feasible intention.</p>
       </div>
 
       <div class="side">
@@ -255,15 +244,12 @@ footer { padding: 36px 0 48px; border-top: 1px solid var(--line); color: var(--i
   var C1 = '#1f4fd1', C2 = '#d62728';
   var MCOL = { '4T': '#0b4f9c', '2T': '#3d8fd1', '1T': '#8fc1e3', amelia: '#cc79a7', stgcnn: '#e69f00' };
   var MLAB = { '4T': 'TP-4T', '2T': 'TP-2T', '1T': 'TP-1T', amelia: 'Amelia-TF', stgcnn: 'STGCNN' };
-  // Pipeline labels use a compass-sign convention that swaps left/right; correct for display.
-  var DISP = { TurnLeft: 'TurnRight', TurnRight: 'TurnLeft', Straight: 'Straight', Hold: 'Hold' };
   var ORDER = ['TurnLeft', 'TurnRight', 'Straight', 'Hold'];
-  var DASH = { TurnLeft: '10 5', TurnRight: '2 4', Straight: '', Hold: '1 3' };
   var ICON = { Aircraft: ['assets/icon_aircraft.png', -0.5766, -0.5820, 2.2050, 2.1537], Vehicle: ['assets/icon_vehicle.png', 0.0351, -0.6471, 0.9411, 2.3127] };
   var LEN = { Aircraft: 35, Vehicle: 6 };
 
   var frameEl = document.getElementById('frame'), t = document.getElementById('t'), tl = document.getElementById('tl'),
-      badge = document.getElementById('tbadge'), play = document.getElementById('play'), intentEl = document.getElementById('intent');
+      badge = document.getElementById('tbadge'), play = document.getElementById('play');
   var DATA = null, model = '4T', strat = 'mp', timer = null;
 
   function el(name, attrs, parent) {
@@ -352,7 +338,7 @@ footer { padding: 36px 0 48px; border-top: 1px solid var(--line); color: var(--i
         ORDER.forEach(function (raw) {
           var v = c.modes[i][raw]; if (!v) return;
           band(svg, v.xy, v.s, c.h[i], col, 0.05 + 0.2 * v.p);
-          line(svg, [last(c.hist[i])].concat(v.xy), col, 2.8, 0.15 + 0.8 * v.p, DASH[DISP[raw]]);
+          line(svg, [last(c.hist[i])].concat(v.xy), col, 2.8, 0.15 + 0.8 * v.p);
         });
       } else if (c.hyps) {
         c.hyps[i].forEach(function (h) {
@@ -370,23 +356,6 @@ footer { padding: 36px 0 48px; border-top: 1px solid var(--line); color: var(--i
     var old = frameEl.querySelector('svg'); if (old) frameEl.removeChild(old);
     frameEl.insertBefore(svg, badge);
 
-    // intention readout
-    var html = '';
-    if (model === 'gt') html = '<div class="na">Recorded trajectories: what actually happened over the next 50 s.</div>';
-    else if (!c.modes) html = '<div class="na">' + MLAB[model] + (model === 'stgcnn' ? ' outputs a single trajectory with no notion of intention.' : ' outputs unlabelled trajectory hypotheses with no explicit intention.') + '</div>';
-    else [0, 1].forEach(function (i) {
-      html += '<div><h4 style="color:' + cols[i] + '">A' + (i + 1) + ' intention</h4>';
-      var rows = Object.keys(c.modes[i]).map(function (raw) { return [DISP[raw], c.modes[i][raw].p]; });
-      ORDER.forEach(function (name) {
-        var r = rows.filter(function (x) { return x[0] === name; })[0];
-        var sw = '<svg width="22" height="6" style="vertical-align:middle;margin-right:4px"><line x1="1" y1="3" x2="21" y2="3" stroke="' + cols[i] + '" stroke-width="2.4" stroke-dasharray="' + (DASH[name] || 'none') + '"/></svg>';
-        html += '<div class="row"><span>' + sw + name.replace('Turn', 'Turn ') + '</span>' +
-          (r ? '<span class="bar"><i style="width:' + (r[1] * 100).toFixed(1) + '%;background:' + cols[i] + '"></i></span><b>' + r[1].toFixed(2) + '</b>'
-             : '<span class="mask" title="Turn unreachable within the horizon on the taxiway graph, so it is masked out">masked (unreachable)</span><b></b>') + '</div>';
-      });
-      html += '</div>';
-    });
-    intentEl.innerHTML = html;
     tl.textContent = badge.textContent = 't = +' + t.value + ' s';
   }
 
